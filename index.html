@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algoritmo Genético - Abastecimento Logístico</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #195128;
+            --primary-hover: #268840;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --success: #10b981;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+        }
+
+        header {
+            background: #195128;
+            color: white;
+            padding: 24px 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        header > div > img {
+            height: 100px;
+            margin-bottom: 5px;
+        }
+
+        header h1 { margin: 0; font-size: 24px; }
+        header p { margin: 8px 0 0 0; color: #ffffff; font-size: 14px; }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+        }
+
+        .card.full-width { grid-column: span 2; }
+
+        h2 {
+            margin-top: 0;
+            font-size: 18px;
+            border-bottom: 2px solid var(--bg);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            color: #111827;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .input-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-field label {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        input {
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus { border-color: var(--primary); }
+
+        button {
+            padding: 12px 24px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        button:hover { background: var(--primary-hover); }
+        button.secondary { background: #4b5563; }
+        button.secondary:hover { background: #374151; }
+        button:disabled { background: #9ca3af; cursor: not-allowed; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        th { background: var(--bg); font-weight: 600; }
+        .table-container { max-height: 300px; overflow-y: auto; }
+
+        .log {
+            background: #1f2937;
+            color: #d1d5db;
+            padding: 16px;
+            height: 268px;
+            overflow-y: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            border-radius: 8px;
+            line-height: 1.5;
+        }
+
+        .highlight { color: var(--success); font-weight: bold; }
+        
+        .result-box {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .result-box h3 { margin: 0 0 10px 0; color: #065f46; }
+        .result-price { font-size: 28px; font-weight: bold; color: #059669; margin: 0; }
+
+        @media (max-width: 768px) {
+            .container { grid-template-columns: 1fr; }
+            .card.full-width { grid-column: span 1; }
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div>
+        <img src="https://ifgoiano.edu.br/home/images/REITORIA/Imagens/2017/Maio_2017/institucional.png" alt="logo">
+    </div>
+    <div>
+        <h1>Algoritmo Genético - Abastecimento Logístico</h1>
+        <p>Inteliência Artificial - Prof. Dra. Leila Rolling</p>
+        <p>Amadeus Ferro - Gabriel Mendes - Lucas Duarte</p>
+    </div>
+
+</header>
+
+<div class="container">
+
+    <div class="card">
+        <h2>Parâmetros do Algoritmo</h2>
+        <div class="input-group">
+            <div class="input-field">
+                <label>Distância Total (km)</label>
+                <input id="distTotal" type="number" value="1200">
+            </div>
+            <div class="input-field">
+                <label>Qtd. de Postos</label>
+                <input id="numStations" type="number" value="15">
+            </div>
+            <div class="input-field">
+                <label>Autonomia (km)</label>
+                <input id="autonomia" type="number" value="400">
+            </div>
+            <div class="input-field">
+                <label>Consumo (km/L)</label>
+                <input id="consumo" type="number" value="8">
+            </div>
+            <div class="input-field">
+                <label>População</label>
+                <input id="popSize" type="number" value="50">
+            </div>
+            <div class="input-field">
+                <label>Gerações</label>
+                <input id="generations" type="number" value="100">
+            </div>
+            <div class="input-field">
+                <label>Taxa Mutação</label>
+                <input id="mutationRate" type="number" step="0.01" value="0.05">
+            </div>
+        </div>
+        <button class="secondary" onclick="generateStations()">1. Gerar Nova Rota e Postos</button>
+        <button id="btnRun" onclick="runGA()">2. Otimizar Rota (Rodar AG)</button>
+    </div>
+
+    <div class="card">
+        <h2>Postos Disponíveis no Trajeto</h2>
+        <div class="table-container">
+            <table id="stationsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Distância (km)</th>
+                        <th>Preço do Combustível (R$)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card full-width">
+        <h2>Convergência do Custo</h2>
+        <div class="chart-wrapper">
+            <canvas id="chart"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Log Evolutivo</h2>
+        <div id="log" class="log">Gere os postos e clique em Otimizar Rota para iniciar...</div>
+    </div>
+
+    <div class="card">
+        <h2>Melhor Solução Encontrada</h2>
+        <div id="bestSolutionText" style="word-break: break-all; font-family: monospace; color: var(--text-muted);">
+            Aguardando execução...
+        </div>
+        <div id="routeDetails" style="margin-top: 15px; font-size: 14px;"></div>
+        
+        <div class="result-box">
+            <h3>Custo Total Estimado</h3>
+            <p class="result-price" id="finalCost">R$ 0,00</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let stations = [];
+    let chartInstance = null;
+
+    function generateStations() {
+        const numStations = parseInt(document.getElementById("numStations").value);
+        const totalDistance = parseFloat(document.getElementById("distTotal").value);
+        
+        stations = [];
+        const tbody = document.querySelector("#stationsTable tbody");
+        tbody.innerHTML = "";
+
+        let distances = new Set();
+        while(distances.size < numStations) {
+            let d = Math.floor(Math.random() * (totalDistance - 40)) + 20;
+            distances.add(d);
+        }
+        
+        distances = Array.from(distances).sort((a, b) => a - b);
+
+        distances.forEach((dist, index) => {
+            let price = (Math.random() * (6.50 - 4.90) + 4.90).toFixed(2);
+            stations.push({ id: index + 1, dist: dist, price: parseFloat(price) });
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>P-${index + 1}</td>
+                    <td>${dist} km</td>
+                    <td>R$ ${price}</td>
+                </tr>
+            `;
+        });
+
+        document.getElementById("log").innerHTML = "Novos postos gerados com sucesso! Pronto para otimizar.\n";
+        document.getElementById("btnRun").disabled = false;
+    }
+
+    generateStations();
+
+    async function runGA() {
+        const btnRun = document.getElementById("btnRun");
+        btnRun.disabled = true;
+        btnRun.innerText = "Calculando...";
+
+        let autonomia = parseFloat(document.getElementById("autonomia").value);
+        let consumo = parseFloat(document.getElementById("consumo").value);
+        let totalDistance = parseFloat(document.getElementById("distTotal").value);
+        let popSize = parseInt(document.getElementById("popSize").value);
+        let generations = parseInt(document.getElementById("generations").value);
+        let mutationRate = parseFloat(document.getElementById("mutationRate").value);
+
+        const precoOrigem = 5.50; 
+
+        function randomIndividual() {
+            return stations.map(() => Math.random() < 0.5 ? 1 : 0);
+        }
+
+        function fitness(ind) {
+            let activeStops = [{ dist: 0, price: precoOrigem }]; 
+            
+            for (let i = 0; i < ind.length; i++) {
+                if (ind[i] === 1) {
+                    activeStops.push(stations[i]);
+                }
+            }
+            
+            activeStops.push({ dist: totalDistance, price: 0 }); 
+            
+            let cost = 0;
+            for (let i = 0; i < activeStops.length - 1; i++) {
+                let distanceToNext = activeStops[i+1].dist - activeStops[i].dist;
+                
+                if (distanceToNext > autonomia) return Infinity;
+                
+                let fuelNeeded = distanceToNext / consumo;
+                cost += fuelNeeded * activeStops[i].price;
+            }
+            return cost;
+        }
+
+        function roulette(pop) {
+            let scores = pop.map(i => {
+                let f = fitness(i);
+                return f === Infinity ? 0 : 100000 / (f * f); 
+            });
+            let sum = scores.reduce((a, b) => a + b, 0);
+            if(sum === 0) return Math.floor(Math.random() * pop.length); 
+            
+            let r = Math.random() * sum;
+            let acc = 0;
+            for (let i = 0; i < pop.length; i++) {
+                acc += scores[i];
+                if (acc >= r) return i;
+            }
+            return pop.length - 1;
+        }
+
+        function crossover(p1, p2) {
+            let point = Math.floor(Math.random() * p1.length);
+            return [
+                [...p1.slice(0, point), ...p2.slice(point)],
+                [...p2.slice(0, point), ...p1.slice(point)]
+            ];
+        }
+
+        function mutate(ind) {
+            return ind.map(g => Math.random() < mutationRate ? 1 - g : g);
+        }
+
+        let population = Array.from({ length: popSize }, randomIndividual);
+        let logDiv = document.getElementById("log");
+        logDiv.innerHTML = "Iniciando otimização...\n\n\n";
+
+        if (chartInstance) chartInstance.destroy();
+        const ctx = document.getElementById("chart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: [],
+                datasets: [{
+                    label: "Menor Custo (R$)",
+                    data: [],
+                    borderColor: "#3b82f6",
+                    backgroundColor: "rgba(59, 130, 246, 0.1)",
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { 
+                    y: { 
+                        beginAtZero: true
+                    } 
+                },
+                animation: false
+            }
+        });
+
+        for (let g = 0; g < generations; g++) {
+            population.sort((a, b) => fitness(a) - fitness(b));
+
+            let elite = population[0];
+            let eliteCost = fitness(elite);
+
+            chartInstance.data.labels.push(g);
+            chartInstance.data.datasets[0].data.push(eliteCost === Infinity ? null : eliteCost);
+            
+            if(g % 10 === 0 || g === generations - 1) chartInstance.update();
+
+            let logText = `Gen ${g.toString().padStart(3, '0')} | Custo: `;
+            logText += eliteCost === Infinity ? "Inválido (Sem Autonomia)" : `R$ ${eliteCost.toFixed(2)}`;
+            logDiv.innerHTML += logText + "<br>";
+            logDiv.scrollTop = logDiv.scrollHeight;
+
+            let newPop = [elite]; 
+
+            while (newPop.length < popSize) {
+                let p1 = population[roulette(population)];
+                let p2 = population[roulette(population)];
+                let [c1, c2] = crossover(p1, p2);
+                
+                newPop.push(mutate(c1));
+                if (newPop.length < popSize) newPop.push(mutate(c2));
+            }
+            population = newPop;
+
+            await new Promise(r => setTimeout(r, 10));
+        }
+
+        population.sort((a, b) => fitness(a) - fitness(b));
+        let best = population[0];
+        let bestCost = fitness(best);
+
+        if (bestCost === Infinity) {
+            document.getElementById("bestSolutionText").innerHTML = "❌ Nenhuma rota válida encontrada. Aumente a autonomia ou reduza a distância total.";
+            document.getElementById("routeDetails").innerHTML = "";
+            document.getElementById("finalCost").innerText = "Inválido";
+            document.getElementById("finalCost").style.color = "red";
+        } else {
+            document.getElementById("bestSolutionText").innerHTML = `Cromossomo: <b>[${best.join(" - ")}]</b>`;
+            
+            let paradasInfo = best.map((val, idx) => val === 1 ? `P-${idx+1} (${stations[idx].dist}km)` : null).filter(x => x).join(" ➔ ");
+            
+            document.getElementById("routeDetails").innerHTML = `
+                <b>Rota de Abastecimento:</b><br>
+                Morrinhos(0km) ➔ ${paradasInfo ? paradasInfo + ' ➔ ' : ''}Destino(${totalDistance}km)
+            `;
+            
+            document.getElementById("finalCost").innerText = `R$ ${bestCost.toFixed(2)}`;
+            document.getElementById("finalCost").style.color = "#059669";
+        }
+
+        btnRun.innerText = "2. Otimizar Rota (Rodar AG)";
+        btnRun.disabled = false;
+        logDiv.innerHTML += "\n<span class='highlight'>Processo finalizado com sucesso!</span>";
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
